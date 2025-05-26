@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -25,6 +27,9 @@ class _LoginScreenState extends State<LoginScreen>
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  // Firebase Auth instance
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // State variables
   bool _isPasswordVisible = false;
@@ -78,6 +83,9 @@ class _LoginScreenState extends State<LoginScreen>
 
     // Start animations
     _startAnimations();
+
+    // Check if user is already logged in
+    _checkCurrentUser();
   }
 
   void _startAnimations() async {
@@ -85,6 +93,36 @@ class _LoginScreenState extends State<LoginScreen>
     _fadeController.forward();
     _slideController.forward();
     _pulseController.repeat(reverse: true);
+  }
+
+  void _checkCurrentUser() {
+    User? currentUser = _auth.currentUser;
+    if (currentUser != null) {
+      // User is already logged in, navigate to home
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const HomeScreen(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(1.0, 0.0),
+                  end: Offset.zero,
+                ).animate(CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeInOutCubic,
+                )),
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 800),
+          ),
+        );
+      });
+    }
   }
 
   @override
@@ -105,14 +143,22 @@ class _LoginScreenState extends State<LoginScreen>
     // Add haptic feedback
     HapticFeedback.lightImpact();
 
-    // Simulate login process
-    await Future.delayed(const Duration(milliseconds: 1500));
+    try {
+      // Sign in with Firebase
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
 
-    // Simple validation (replace with actual authentication)
-    if (_emailController.text.toLowerCase().contains('@geleza') &&
-        _passwordController.text.length >= 6) {
+      // Optional: Check if email contains '@geleza' if you want to restrict to specific domain
+      if (!_emailController.text.toLowerCase().contains('@geleza')) {
+        await _auth.signOut();
+        _showErrorDialog('Please use a Geleza email address.');
+        return;
+      }
+
       // Success - navigate to home
-      if (mounted) {
+      if (mounted && userCredential.user != null) {
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
@@ -135,15 +181,40 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         );
       }
-    } else {
-      // Show error
-      _showErrorDialog();
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = _getFirebaseErrorMessage(e.code);
+      _showErrorDialog(errorMessage);
+    } catch (e) {
+      _showErrorDialog('An unexpected error occurred. Please try again.');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
-
-    setState(() => _isLoading = false);
   }
 
-  void _showErrorDialog() {
+  String _getFirebaseErrorMessage(String errorCode) {
+    switch (errorCode) {
+      case 'user-not-found':
+        return 'No user found with this email address.';
+      case 'wrong-password':
+        return 'Incorrect password. Please try again.';
+      case 'invalid-email':
+        return 'Please enter a valid email address.';
+      case 'user-disabled':
+        return 'This account has been disabled.';
+      case 'too-many-requests':
+        return 'Too many failed attempts. Please try again later.';
+      case 'invalid-credential':
+        return 'Invalid email or password. Please check your credentials.';
+      case 'network-request-failed':
+        return 'Network error. Please check your internet connection.';
+      default:
+        return 'Login failed. Please check your credentials and try again.';
+    }
+  }
+
+  void _showErrorDialog([String? customMessage]) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -155,8 +226,8 @@ class _LoginScreenState extends State<LoginScreen>
             Text('Login Failed'),
           ],
         ),
-        content: const Text(
-          'Invalid credentials. Please use a Geleza email address and ensure your password is at least 6 characters.',
+        content: Text(
+          customMessage ?? 'Invalid credentials. Please try again.',
         ),
         actions: [
           TextButton(
@@ -166,6 +237,45 @@ class _LoginScreenState extends State<LoginScreen>
         ],
       ),
     );
+  }
+
+  Future<void> _handleForgotPassword() async {
+    String email = _emailController.text.trim();
+
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter your email address first'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Password reset email sent! Check your inbox.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = e.code == 'user-not-found'
+          ? 'No account found with this email address.'
+          : 'Failed to send reset email. Please try again.';
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -414,8 +524,8 @@ class _LoginScreenState extends State<LoginScreen>
                 const Spacer(),
                 TextButton(
                   onPressed: () {
-                    // Handle forgot password
                     HapticFeedback.lightImpact();
+                    _handleForgotPassword();
                   },
                   child: Text(
                     'Forgot Password?',

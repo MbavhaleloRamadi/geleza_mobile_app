@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geleza_mobile_app_student_use/splash_screen.dart';
 import 'package:geleza_mobile_app_student_use/login_screen.dart';
 import 'package:geleza_mobile_app_student_use/home_screen.dart';
+
 // Import the splash screen (you'll need to create splash_screen.dart file)
 // import 'screens/splash_screen.dart';
 
