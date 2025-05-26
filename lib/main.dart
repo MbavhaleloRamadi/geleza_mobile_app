@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geleza_mobile_app_student_use/splash_screen.dart';
+import 'package:geleza_mobile_app_student_use/login_screen.dart';
+import 'package:geleza_mobile_app_student_use/home_screen.dart';
 // Import the splash screen (you'll need to create splash_screen.dart file)
 // import 'screens/splash_screen.dart';
 
@@ -52,11 +54,8 @@ class GelezaApp extends StatelessWidget {
       // Define named routes for navigation (you can expand this later)
       routes: {
         '/splash': (context) => const SplashScreen(),
-        '/home': (context) => const PlaceholderHomeScreen(),
-        // Add more routes as you build other screens
-        // '/login': (context) => const LoginScreen(),
-        // '/qr-scanner': (context) => const QRScannerScreen(),
-        // '/leave-request': (context) => const LeaveRequestScreen(),
+        '/home': (context) => const LoginScreen(),
+        '/dashboard': (context) => const HomeScreen()
       },
     );
   }
@@ -147,11 +146,11 @@ class _SplashScreenState extends State<SplashScreen>
     // Wait for animations to complete plus viewing time
     await Future.delayed(const Duration(milliseconds: 3000));
 
-    // Navigate to home screen (replace with login screen later)
+    // Navigate to login screen
     if (mounted) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const PlaceholderHomeScreen()),
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
       );
     }
   }
@@ -423,59 +422,6 @@ class _SplashScreenState extends State<SplashScreen>
           ),
         ),
       ],
-    );
-  }
-}
-
-// Temporary placeholder screen - replace with actual screens later
-class PlaceholderHomeScreen extends StatelessWidget {
-  const PlaceholderHomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Geleza - Home'),
-        centerTitle: true,
-      ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.home,
-              size: 64,
-              color: Color(0xFF312e81),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Welcome to Geleza!',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF312e81),
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Your timesheet management solution',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Next: Implement login and dashboard screens',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.orange,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
