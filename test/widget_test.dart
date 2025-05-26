@@ -13,7 +13,7 @@ import 'package:geleza_mobile_app_student_use/main.dart';
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(const GelezaApp());
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);
